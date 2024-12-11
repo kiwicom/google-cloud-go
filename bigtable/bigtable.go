@@ -403,7 +403,7 @@ func (t *Table) readRows(ctx context.Context, arg RowSet, f func(Row) bool, mt *
 		startTime := time.Now()
 		stream, err := t.c.client.ReadRows(ctx, req)
 		if err != nil {
-			return err
+			return fmt.Errorf("client.ReadRows: %w", err)
 		}
 
 		var cr *chunkReader
@@ -440,7 +440,7 @@ func (t *Table) readRows(ctx context.Context, arg RowSet, f func(Row) bool, mt *
 				attrMap["error"] = err.Error()
 				attrMap["time_secs"] = time.Since(startTime).Seconds()
 				trace.TracePrintf(ctx, attrMap, "Retry details in ReadRows")
-				return err
+				return fmt.Errorf("stream.RecvMsg: %w", err)
 			}
 			attrMap["time_secs"] = time.Since(startTime).Seconds()
 			attrMap["rowCount"] = len(res.Chunks)
@@ -450,7 +450,7 @@ func (t *Table) readRows(ctx context.Context, arg RowSet, f func(Row) bool, mt *
 				row, err := cr.Process(cc)
 				if err != nil {
 					// No need to prepare for a retry, this is an unretryable error.
-					return err
+					return fmt.Errorf("cr.Process: %w", err)
 				}
 				if row == nil {
 					continue
@@ -483,10 +483,10 @@ func (t *Table) readRows(ctx context.Context, arg RowSet, f func(Row) bool, mt *
 
 			if err := cr.Close(); err != nil {
 				// No need to prepare for a retry, this is an unretryable error.
-				return err
+				return fmt.Errorf("cr.Close: %w", err)
 			}
 		}
-		return err
+		return err // always nil
 	}, retryOptions...)
 
 	return err
