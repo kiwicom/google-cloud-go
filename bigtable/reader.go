@@ -19,7 +19,6 @@ package bigtable
 import (
 	"bytes"
 	"fmt"
-	"strings"
 
 	btpb "cloud.google.com/go/bigtable/apiv2/bigtablepb"
 )
@@ -68,7 +67,7 @@ type chunkReader struct {
 	curTS     int64
 	curVal    []byte
 	curRow    Row
-	lastKey   string
+	lastKey   []byte
 }
 
 // newChunkReader returns a new chunkReader for handling read rows responses.
@@ -184,7 +183,13 @@ func (cr *chunkReader) finishCell() {
 
 func (cr *chunkReader) commitRow() Row {
 	row := cr.curRow
-	cr.lastKey = cr.curRow.Key()
+	key := cr.curRow.Key()
+	if cap(cr.lastKey) < len(key) {
+		cr.lastKey = make([]byte, len(key))
+	} else {
+		cr.lastKey = cr.lastKey[:len(key)]
+	}
+	copy(cr.lastKey, key)
 	cr.resetToNewRow()
 	return row
 }
@@ -207,8 +212,8 @@ func (cr *chunkReader) validateNewRow(cc *btpb.ReadRowsResponse_CellChunk) error
 		return fmt.Errorf("missing key field for new row %v", cc)
 	}
 
-	if cr.lastKey != "" {
-		r := strings.Compare(string(cc.RowKey), cr.lastKey)
+	if len(cr.lastKey) > 0 {
+		r := bytes.Compare(cc.RowKey, cr.lastKey)
 		direction := "increasing"
 		if cr.reversed {
 			r *= -1
