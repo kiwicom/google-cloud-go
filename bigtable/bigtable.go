@@ -39,6 +39,7 @@ import (
 	gtransport "google.golang.org/api/transport/grpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/mem"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
@@ -170,22 +171,32 @@ var (
 	idempotentRetryCodes  = []codes.Code{codes.DeadlineExceeded, codes.Unavailable, codes.Aborted}
 	isIdempotentRetryCode = make(map[codes.Code]bool)
 	retryOptions          = []gax.CallOption{
-		gax.WithRetry(func() gax.Retryer {
-			backoff := gax.Backoff{
-				Initial:    100 * time.Millisecond,
-				Max:        2 * time.Second,
-				Multiplier: 1.2,
-			}
-			return &bigtableRetryer{
-				Retryer: gax.OnCodes(idempotentRetryCodes, backoff),
-				Backoff: backoff,
-			}
-		}),
+		newRetryOption(),
+	}
+	retryAndCodecOptions = []gax.CallOption{
+		newRetryOption(),
+		gax.WithGRPCOptions(
+			grpc.ForceCodecV2(bytesCodecV2{}),
+		),
 	}
 	retryableInternalErrMsgs = []string{
 		"stream terminated by RST_STREAM", // Retry similar to spanner client. Special case due to https://github.com/googleapis/google-cloud-go/issues/6476
 	}
 )
+
+func newRetryOption() gax.CallOption {
+	return gax.WithRetry(func() gax.Retryer {
+		backoff := gax.Backoff{
+			Initial:    100 * time.Millisecond,
+			Max:        2 * time.Second,
+			Multiplier: 1.2,
+		}
+		return &bigtableRetryer{
+			Retryer: gax.OnCodes(idempotentRetryCodes, backoff),
+			Backoff: backoff,
+		}
+	})
+}
 
 // bigtableRetryer extends the generic gax Retryer, but also checks
 // error messages to check if operation can be retried
@@ -456,7 +467,10 @@ func (t *Table) readRows(ctx context.Context, arg RowSet, f func(Row) bool, mt *
 		res := new(btpb.ReadRowsResponse)
 		for {
 			proto.Reset(res)
-			err := stream.RecvMsg(res)
+			// Receive the message into databuf as a wire-encoded message so we can
+			// use a custom decoder to avoid an extra copy at the protobuf layer.
+			databufs := mem.BufferSlice{}
+			err := stream.RecvMsg(&databufs)
 			if err == io.EOF {
 				*trailerMD = stream.Trailer()
 				break
@@ -526,7 +540,7 @@ func (t *Table) readRows(ctx context.Context, arg RowSet, f func(Row) bool, mt *
 			}
 		}
 		return err
-	}, retryOptions...)
+	}, retryAndCodecOptions...)
 
 	return err
 }

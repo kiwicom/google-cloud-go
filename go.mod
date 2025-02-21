@@ -54,3 +54,5 @@ require (
 	golang.org/x/text v0.21.0 // indirect
 	golang.org/x/time v0.9.0 // indirect
 )
+
+exclude github.com/envoyproxy/go-control-plane/envoy v1.32.3
