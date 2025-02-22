@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"strings"
 
 	"google.golang.org/grpc/mem"
 	"google.golang.org/protobuf/encoding/protowire"
@@ -73,6 +74,33 @@ func (d *Decoder) CopyNextBytes(n int) []byte {
 		}
 	}
 	return buf
+}
+
+// Copies up to next n bytes into a new string, or fewer if fewer bytes remain in the
+// buffers overall. Does not advance offsets.
+func (d *Decoder) CopyNextString(n int) string {
+	remaining := n
+	if r := d.Buffers.Len() - int(d.Offset); r < remaining {
+		remaining = r
+	}
+	currBuf := d.CurrentBuffer
+	currOff := d.CurrentOffset
+	var sb strings.Builder
+	sb.Grow(remaining)
+	for remaining > 0 {
+		b := d.Buffers[currBuf].ReadOnlyData()
+		remainingInCurr := len(b[currOff:])
+		if remainingInCurr < remaining {
+			sb.Write(b[currOff:])
+			remaining -= remainingInCurr
+			currBuf++
+			currOff = 0
+		} else {
+			sb.Write(b[currOff : currOff+uint64(remaining)])
+			remaining = 0
+		}
+	}
+	return sb.String()
 }
 
 // Advance current buffer & byte offset in the decoding by n bytes. Returns an error if we
@@ -238,6 +266,24 @@ func (d *Decoder) ConsumeBytesCopy() ([]byte, error) {
 		return nil, fmt.Errorf("advancing offset: %w", err)
 	}
 	return b, nil
+}
+
+// Consume a string field from the input and copy into a string if
+// necessary (if the data is split across buffers in databuf).  This can be
+// used to leverage proto.Unmarshal for small bytes fields (i.e. anything
+// except object data).
+func (d *Decoder) ConsumeStringCopy() (string, error) {
+	// m is the length of the bytes data.
+	m, err := d.ConsumeVarint()
+	if err != nil {
+		return "", fmt.Errorf("consuming varint: %w", err)
+	}
+	// Copy the data into a buffer and advance the offset
+	s := d.CopyNextString(int(m))
+	if err := d.AdvanceOffset(m); err != nil {
+		return "", fmt.Errorf("advancing offset: %w", err)
+	}
+	return s, nil
 }
 
 // OffsetsLen returns the length of the data referenced by offsets.

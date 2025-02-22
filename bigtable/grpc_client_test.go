@@ -107,6 +107,11 @@ func BenchmarkReadRowsDecoder(b *testing.B) {
 		if err != nil {
 			b.Fatalf("dec.decode: %v", err)
 		}
+		var count int
+		err = dec.decodeChunks(func(chunk decodedChunk) error {
+			count++
+			return nil
+		})
 		BenchmarkReadRowsDecoderResult = &dec.rc.readRowsResponse
 	}
 }
