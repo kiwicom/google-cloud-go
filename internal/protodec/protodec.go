@@ -239,3 +239,40 @@ func (d *Decoder) ConsumeBytesCopy() ([]byte, error) {
 	}
 	return b, nil
 }
+
+// OffsetsLen returns the length of the data referenced by offsets.
+func (d *Decoder) OffsetsLen(offsets BufferSliceOffsets) int {
+	if offsets.startBuf == offsets.endBuf {
+		return int(offsets.endOff - offsets.startOff)
+	}
+	n := d.Buffers[offsets.startBuf].Len() - int(offsets.startOff)
+	for i := offsets.startBuf + 1; i < offsets.endBuf; i++ {
+		n += d.Buffers[i].Len()
+	}
+	n += int(offsets.endOff)
+
+	return n
+}
+
+// AppendOffsets appends the data from range referenced by offsets into dest.
+func (d *Decoder) AppendOffsets(dest []byte, offsets BufferSliceOffsets) []byte {
+	n := d.OffsetsLen(offsets)
+	if n == 0 {
+		return dest
+	}
+	remaining := cap(dest) - len(dest)
+	if n > remaining {
+		newDest := make([]byte, len(dest), len(dest)+n)
+		copy(newDest, dest)
+		dest = newDest
+	}
+	if offsets.startBuf == offsets.endBuf {
+		return append(dest, d.Buffers[offsets.startBuf].ReadOnlyData()[offsets.startOff:offsets.endOff]...)
+	}
+	dest = append(dest, d.Buffers[offsets.startBuf].ReadOnlyData()[offsets.startOff:]...)
+	for i := offsets.startBuf + 1; i < offsets.endBuf; i++ {
+		dest = append(dest, d.Buffers[i].ReadOnlyData()...)
+	}
+	dest = append(dest, d.Buffers[offsets.endBuf].ReadOnlyData()[:offsets.endOff]...)
+	return dest
+}
