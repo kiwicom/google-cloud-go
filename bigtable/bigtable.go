@@ -512,33 +512,34 @@ func (t *Table) readRows(ctx context.Context, arg RowSet, f func(Row) bool, mt *
 				attrMap["time_secs"] = time.Since(startTime).Seconds()
 				attrMap["rowCount"] = dec.chunkCount
 				trace.TracePrintf(ctx, attrMap, "Details in ReadRows")
-				
-				err = dec.decodeChunks(func(chunk decodedChunk) error {
-					row, err := cr.Process(cc)
-					if err != nil {
-						// No need to prepare for a retry, this is an unretryable error.
-						return err
-					}
-					if row == nil {
-						return nil
-					}
-					prevRowKey = row.Key()
-					continueReading := f(row)
-					numRowsRead++
-					if !continueReading {
-						// Cancel and drain stream.
-						cancel()
-						for {
-							proto.Reset(res)
-							if err := stream.RecvMsg(res); err != nil {
-								*trailerMD = stream.Trailer()
-								// The stream has ended. We don't return an error
-								// because the caller has intentionally interrupted the scan.
-								return nil
-							}
-						}
-					}
-				})
+
+				//err = dec.decodeChunks(func(chunk decodedChunk) error {
+				//	row, err := cr.Process(cc)
+				//	if err != nil {
+				//		// No need to prepare for a retry, this is an unretryable error.
+				//		return err
+				//	}
+				//	if row == nil {
+				//		return nil
+				//	}
+				//	prevRowKey = row.Key()
+				//	continueReading := f(row)
+				//	numRowsRead++
+				//	if !continueReading {
+				//		// Cancel and drain stream.
+				//		cancel()
+				//		for {
+				//			proto.Reset(res)
+				//			if err := stream.RecvMsg(res); err != nil {
+				//				*trailerMD = stream.Trailer()
+				//				// The stream has ended. We don't return an error
+				//				// because the caller has intentionally interrupted the scan.
+				//				return nil
+				//			}
+				//		}
+				//	}
+				//	return nil
+				//})
 
 				if res.LastScannedRowKey != nil {
 					prevRowKey = string(res.LastScannedRowKey)

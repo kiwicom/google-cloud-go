@@ -44,7 +44,7 @@ func (bytesCodecV2) Unmarshal(data mem.BufferSlice, v any) error {
 }
 
 func (bytesCodecV2) Name() string {
-	return encproto.Name
+	return ""
 }
 
 // ReadRowsResponse field and subfield numbers.
@@ -358,7 +358,7 @@ type decodedChunk struct {
 	// column family name in a response so clients must check
 	// explicitly for the presence of this message, not just for
 	// `family_name.value` being non-empty.
-	familyName        protodec.BufferSliceOffsets
+	familyName        string
 	familyNamePresent bool
 
 	// The column qualifier for this chunk of data.  If this message
@@ -366,7 +366,7 @@ type decodedChunk struct {
 	// as the previous CellChunk.  Column qualifiers may be empty so
 	// clients must check for the presence of this message, not just
 	// for `qualifier.value` being non-empty.
-	qualifier        protodec.BufferSliceOffsets
+	qualifier        []byte
 	qualifierPresent bool
 
 	// The cell's stored timestamp, which also uniquely identifies it
@@ -453,12 +453,14 @@ func (d *readRowsResponseDecoder) decodeChunk(chunk *decodedChunk) error {
 				return fmt.Errorf("invalid ReadRowsResponse_CellChunk.RowKey: %w", err)
 			}
 		case fieldNum == familyNameField && fieldType == protowire.BytesType:
-			chunk.familyName, chunk.familyNamePresent, err = d.decodeWrappedString()
+			chunk.familyNamePresent = true
+			chunk.familyName, err = d.decodeWrappedString()
 			if err != nil {
 				return fmt.Errorf("invalid ReadRowsResponse_CellChunk.FamilyName: %w", err)
 			}
 		case fieldNum == qualifierField && fieldType == protowire.BytesType:
-			chunk.qualifier, chunk.qualifierPresent, err = d.decodeWrappedString()
+			chunk.qualifierPresent = true
+			chunk.qualifier, err = d.decodeWrappedBytes()
 			if err != nil {
 				return fmt.Errorf("invalid ReadRowsResponse_CellChunk.FamilyName: %w", err)
 			}
@@ -509,34 +511,58 @@ func (d *readRowsResponseDecoder) decodeChunk(chunk *decodedChunk) error {
 	return nil
 }
 
-func (d *readRowsResponseDecoder) decodeWrappedString() (protodec.BufferSliceOffsets, bool, error) {
+func (d *readRowsResponseDecoder) decodeWrappedString() (string, error) {
 	bytesFieldLen, err := d.dec.ConsumeVarint()
 	if err != nil {
-		return protodec.BufferSliceOffsets{}, false, fmt.Errorf("invalid length of StringValue: %v", err)
+		return "", fmt.Errorf("invalid length of StringValue: %v", err)
 	}
 	contentEndOffset := d.dec.Offset + bytesFieldLen
-	var (
-		offsets  protodec.BufferSliceOffsets
-		hasValue bool
-	)
+	var value string
 	for d.dec.Offset < contentEndOffset {
 		fieldNum, fieldType, err := d.dec.ConsumeTag()
 		if err != nil {
-			return protodec.BufferSliceOffsets{}, false, fmt.Errorf("consuming tag in StringValue: %v", err)
+			return "", fmt.Errorf("consuming tag in StringValue: %v", err)
 		}
 		switch {
 		case fieldNum == wrappedValueField && fieldType == protowire.BytesType:
-			offsets, err = d.dec.ConsumeBytes()
+			value, err = d.dec.ConsumeStringCopy()
 			if err != nil {
-				return protodec.BufferSliceOffsets{}, false, fmt.Errorf("invalid ReadRowsResponse_CellChunk.RowKey: %w", err)
+				return "", fmt.Errorf("invalid ReadRowsResponse_CellChunk.RowKey: %w", err)
 			}
-			hasValue = true
 		default:
 			err := d.dec.ConsumeFieldValue(fieldNum, fieldType)
 			if err != nil {
-				return protodec.BufferSliceOffsets{}, false, fmt.Errorf("invalid field in ReadRowsResponse_CellChunk: %w", err)
+				return "", fmt.Errorf("invalid field in ReadRowsResponse_CellChunk: %w", err)
 			}
 		}
 	}
-	return offsets, hasValue, nil
+	return value, nil
+}
+
+func (d *readRowsResponseDecoder) decodeWrappedBytes() ([]byte, error) {
+	bytesFieldLen, err := d.dec.ConsumeVarint()
+	if err != nil {
+		return nil, fmt.Errorf("invalid length of StringValue: %v", err)
+	}
+	contentEndOffset := d.dec.Offset + bytesFieldLen
+	var value []byte
+	for d.dec.Offset < contentEndOffset {
+		fieldNum, fieldType, err := d.dec.ConsumeTag()
+		if err != nil {
+			return nil, fmt.Errorf("consuming tag in StringValue: %v", err)
+		}
+		switch {
+		case fieldNum == wrappedValueField && fieldType == protowire.BytesType:
+			value, err = d.dec.ConsumeBytesCopy()
+			if err != nil {
+				return nil, fmt.Errorf("invalid ReadRowsResponse_CellChunk.RowKey: %w", err)
+			}
+		default:
+			err := d.dec.ConsumeFieldValue(fieldNum, fieldType)
+			if err != nil {
+				return nil, fmt.Errorf("invalid field in ReadRowsResponse_CellChunk: %w", err)
+			}
+		}
+	}
+	return value, nil
 }
