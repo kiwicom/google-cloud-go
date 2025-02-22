@@ -44,7 +44,7 @@ func (bytesCodecV2) Unmarshal(data mem.BufferSlice, v any) error {
 }
 
 func (bytesCodecV2) Name() string {
-	return ""
+	return encproto.Name
 }
 
 // ReadRowsResponse field and subfield numbers.

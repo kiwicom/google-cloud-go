@@ -30,6 +30,7 @@ import (
 
 	btpb "cloud.google.com/go/bigtable/apiv2/bigtablepb"
 	btopt "cloud.google.com/go/bigtable/internal/option"
+	"cloud.google.com/go/internal/protodec"
 	"cloud.google.com/go/internal/trace"
 	gax "github.com/googleapis/gax-go/v2"
 	"go.opentelemetry.io/otel/attribute"
@@ -182,6 +183,7 @@ var (
 	retryableInternalErrMsgs = []string{
 		"stream terminated by RST_STREAM", // Retry similar to spanner client. Special case due to https://github.com/googleapis/google-cloud-go/issues/6476
 	}
+	forceBytesCodecCallOption = grpc.ForceCodecV2(bytesCodecV2{})
 )
 
 func newRetryOption() gax.CallOption {
@@ -449,7 +451,7 @@ func (t *Table) readRows(ctx context.Context, arg RowSet, f func(Row) bool, mt *
 		defer cancel()
 
 		startTime := time.Now()
-		stream, err := t.c.client.ReadRows(ctx, req)
+		stream, err := t.c.client.ReadRows(ctx, req, forceBytesCodecCallOption)
 		if err != nil {
 			return err
 		}
@@ -493,54 +495,73 @@ func (t *Table) readRows(ctx context.Context, arg RowSet, f func(Row) bool, mt *
 				trace.TracePrintf(ctx, attrMap, "Retry details in ReadRows")
 				return err
 			}
-			attrMap["time_secs"] = time.Since(startTime).Seconds()
-			attrMap["rowCount"] = len(res.Chunks)
-			trace.TracePrintf(ctx, attrMap, "Details in ReadRows")
+			err = func() error {
+				defer databufs.Free()
 
-			for _, cc := range res.Chunks {
-				row, err := cr.Process(cc)
+				dec := readRowsResponseDecoder{
+					dec: protodec.Decoder{
+						Buffers: databufs,
+					},
+				}
+
+				err := dec.decode()
 				if err != nil {
+					return err
+				}
+
+				attrMap["time_secs"] = time.Since(startTime).Seconds()
+				attrMap["rowCount"] = dec.chunkCount
+				trace.TracePrintf(ctx, attrMap, "Details in ReadRows")
+				
+				err = dec.decodeChunks(func(chunk decodedChunk) error {
+					row, err := cr.Process(cc)
+					if err != nil {
+						// No need to prepare for a retry, this is an unretryable error.
+						return err
+					}
+					if row == nil {
+						return nil
+					}
+					prevRowKey = row.Key()
+					continueReading := f(row)
+					numRowsRead++
+					if !continueReading {
+						// Cancel and drain stream.
+						cancel()
+						for {
+							proto.Reset(res)
+							if err := stream.RecvMsg(res); err != nil {
+								*trailerMD = stream.Trailer()
+								// The stream has ended. We don't return an error
+								// because the caller has intentionally interrupted the scan.
+								return nil
+							}
+						}
+					}
+				})
+
+				if res.LastScannedRowKey != nil {
+					prevRowKey = string(res.LastScannedRowKey)
+				}
+
+				// Handle any incoming RequestStats. This should happen at most once.
+				if res.RequestStats != nil && settings.fullReadStatsFunc != nil {
+					stats := makeFullReadStats(res.RequestStats)
+					settings.fullReadStatsFunc(&stats)
+				}
+
+				if err := cr.Close(); err != nil {
 					// No need to prepare for a retry, this is an unretryable error.
 					return err
 				}
-				if row == nil {
-					continue
-				}
-				prevRowKey = row.Key()
-				continueReading := f(row)
-				numRowsRead++
-				if !continueReading {
-					// Cancel and drain stream.
-					cancel()
-					for {
-						proto.Reset(res)
-						if err := stream.RecvMsg(res); err != nil {
-							*trailerMD = stream.Trailer()
-							// The stream has ended. We don't return an error
-							// because the caller has intentionally interrupted the scan.
-							return nil
-						}
-					}
-				}
-			}
-
-			if res.LastScannedRowKey != nil {
-				prevRowKey = string(res.LastScannedRowKey)
-			}
-
-			// Handle any incoming RequestStats. This should happen at most once.
-			if res.RequestStats != nil && settings.fullReadStatsFunc != nil {
-				stats := makeFullReadStats(res.RequestStats)
-				settings.fullReadStatsFunc(&stats)
-			}
-
-			if err := cr.Close(); err != nil {
-				// No need to prepare for a retry, this is an unretryable error.
+				return nil
+			}()
+			if err != nil {
 				return err
 			}
 		}
 		return err
-	}, retryAndCodecOptions...)
+	}, retryOptions...)
 
 	return err
 }
