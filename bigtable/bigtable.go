@@ -391,7 +391,7 @@ func (t *Table) ReadRows(ctx context.Context, arg RowSet, f func(Row) bool, opts
 }
 
 func (t *Table) readRows(ctx context.Context, arg RowSet, f func(Row) bool, mt *builtinMetricsTracer, opts ...ReadOption) (err error) {
-	var prevRowKey string
+	var prevRowKey []byte
 	attrMap := make(map[string]interface{})
 
 	numRowsRead := int64(0)
@@ -468,12 +468,13 @@ func (t *Table) readRows(ctx context.Context, arg RowSet, f func(Row) bool, mt *
 					// Should be lowest possible key value, an empty byte array
 					arg = InfiniteRange("")
 				}
+				prevRowKeyStr := string(prevRowKey)
 				if req.Reversed {
-					arg = arg.retainRowsBefore(prevRowKey)
+					arg = arg.retainRowsBefore(prevRowKeyStr)
 				} else {
-					arg = arg.retainRowsAfter(prevRowKey)
+					arg = arg.retainRowsAfter(prevRowKeyStr)
 				}
-				attrMap["rowKey"] = prevRowKey
+				attrMap["rowKey"] = prevRowKeyStr
 				attrMap["error"] = err.Error()
 				attrMap["time_secs"] = time.Since(startTime).Seconds()
 				trace.TracePrintf(ctx, attrMap, "Retry details in ReadRows")
@@ -492,7 +493,13 @@ func (t *Table) readRows(ctx context.Context, arg RowSet, f func(Row) bool, mt *
 				if row == nil {
 					continue
 				}
-				prevRowKey = row.Key()
+				rowKey := row.Key()
+				if cap(prevRowKey) >= len(rowKey) {
+					prevRowKey = prevRowKey[:len(rowKey)]
+				} else {
+					prevRowKey = make([]byte, len(rowKey))
+				}
+				copy(prevRowKey, rowKey)
 				continueReading := f(row)
 				numRowsRead++
 				if !continueReading {
@@ -511,7 +518,17 @@ func (t *Table) readRows(ctx context.Context, arg RowSet, f func(Row) bool, mt *
 			}
 
 			if res.LastScannedRowKey != nil {
-				prevRowKey = string(res.LastScannedRowKey)
+				// LastScannedRowKey is not used for anything else, so we can take the buffer
+				// and rewrite it later. No need to copy here.
+				// But we don't want to make the already existing buffer smaller
+				// to avoid allocations in case the row keys have variable size.
+				if len(res.LastScannedRowKey) >= cap(prevRowKey) {
+					prevRowKey = res.LastScannedRowKey
+				} else {
+					prevRowKey = prevRowKey[:len(res.LastScannedRowKey)]
+					copy(prevRowKey, res.LastScannedRowKey)
+				}
+
 			}
 
 			// Handle any incoming RequestStats. This should happen at most once.
