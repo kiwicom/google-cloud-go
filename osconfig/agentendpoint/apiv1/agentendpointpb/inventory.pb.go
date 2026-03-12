@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,13 +21,14 @@
 package agentendpointpb
 
 import (
+	reflect "reflect"
+	sync "sync"
+
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	date "google.golang.org/genproto/googleapis/type/date"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (
@@ -858,7 +859,7 @@ func (x *Inventory_WindowsApplication) GetHelpLink() string {
 	return ""
 }
 
-// Information related to the actuall source of the versioned package. This
+// Information related to the actual source of the versioned package. This
 // includes source package name and version if available.
 type Inventory_VersionedPackage_Source struct {
 	state         protoimpl.MessageState

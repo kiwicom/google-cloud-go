@@ -21,12 +21,13 @@
 package gkemulticloudpb
 
 import (
+	reflect "reflect"
+	sync "sync"
+
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (
@@ -512,9 +513,8 @@ type OperationMetadata struct {
 	// Output only. The verb associated with the API method which triggered this
 	// operation. Possible values are "create", "delete", "update" and "import".
 	Verb string `protobuf:"bytes,7,opt,name=verb,proto3" json:"verb,omitempty"`
-	// Output only. Identifies whether it has been requested cancellation
-	// for the operation. Operations that have successfully been cancelled
-	// have
+	// Output only. Identifies whether cancellation has been requested for the
+	// operation. Operations that have successfully been cancelled have
 	// [google.longrunning.Operation.error][google.longrunning.Operation.error]
 	// value with a [google.rpc.Status.code][google.rpc.Status.code] of 1,
 	// corresponding to `Code.CANCELLED`.

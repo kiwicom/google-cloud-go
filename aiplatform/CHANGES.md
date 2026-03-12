@@ -1,6 +1,158 @@
 # Changes
 
 
+## [1.114.0](https://github.com/googleapis/google-cloud-go/releases/tag/aiplatform%2Fv1.114.0) (2026-01-22)
+
+### Features
+
+* RAG - add mode config to RagEngineConfig with Spanner and Serverless ([8ddeca5](https://github.com/googleapis/google-cloud-go/commit/8ddeca50844ba7c19cdbab149ff5b25718dd825c))
+* RAG - deprecate tier from RagEngineConfig ([8ddeca5](https://github.com/googleapis/google-cloud-go/commit/8ddeca50844ba7c19cdbab149ff5b25718dd825c))
+
+### Documentation
+
+* A comment for field `basic` in message `.google.cloud.aiplatform.v1beta1.RagManagedDbConfig` is changed ([8ddeca5](https://github.com/googleapis/google-cloud-go/commit/8ddeca50844ba7c19cdbab149ff5b25718dd825c))
+* A comment for field `scaled` in message `.google.cloud.aiplatform.v1beta1.RagManagedDbConfig` is changed ([8ddeca5](https://github.com/googleapis/google-cloud-go/commit/8ddeca50844ba7c19cdbab149ff5b25718dd825c))
+* A comment for field `unprovisioned` in message `.google.cloud.aiplatform.v1beta1.RagManagedDbConfig` is changed ([8ddeca5](https://github.com/googleapis/google-cloud-go/commit/8ddeca50844ba7c19cdbab149ff5b25718dd825c))
+* A comment for message `RagManagedDbConfig` is changed ([8ddeca5](https://github.com/googleapis/google-cloud-go/commit/8ddeca50844ba7c19cdbab149ff5b25718dd825c))
+
+## [1.113.0](https://github.com/googleapis/google-cloud-go/releases/tag/aiplatform%2Fv1.113.0) (2026-01-08)
+
+### Features
+
+* Add Lustre support to the Vertex Training Custom Job API ([db65e79](https://github.com/googleapis/google-cloud-go/commit/db65e7927e54b21a39a54f685810495d2885cb33))
+* add streaming function call argument API changes ([d19e89c](https://github.com/googleapis/google-cloud-go/commit/d19e89cabf2fe93f95411bc2884a111568d5a5b0))
+
+### Documentation
+
+* A comment for field `args` in message `.google.cloud.aiplatform.v1beta1.FunctionCall` is changed ([d19e89c](https://github.com/googleapis/google-cloud-go/commit/d19e89cabf2fe93f95411bc2884a111568d5a5b0))
+* A comment for field `name` in message `.google.cloud.aiplatform.v1beta1.FunctionCall` is changed ([d19e89c](https://github.com/googleapis/google-cloud-go/commit/d19e89cabf2fe93f95411bc2884a111568d5a5b0))
+* Update comments for machine resources and autoscaling ([db65e79](https://github.com/googleapis/google-cloud-go/commit/db65e7927e54b21a39a54f685810495d2885cb33))
+
+## [1.112.0](https://github.com/googleapis/google-cloud-go/releases/tag/aiplatform%2Fv1.112.0) (2025-12-18)
+
+### Features
+
+* Add Lustre support to the Vertex Training Custom Job API ([ce62012](https://github.com/googleapis/google-cloud-go/commit/ce62012fadb0774979ce17f1d922d7c9ebd6232f))
+
+### Documentation
+
+* A comment for field `restart_job_on_worker_restart` in message `.google.cloud.aiplatform.v1beta1.Scheduling` is changed ([ce62012](https://github.com/googleapis/google-cloud-go/commit/ce62012fadb0774979ce17f1d922d7c9ebd6232f))
+* A comment for field `timeout` in message `.google.cloud.aiplatform.v1beta1.Scheduling` is changed ([ce62012](https://github.com/googleapis/google-cloud-go/commit/ce62012fadb0774979ce17f1d922d7c9ebd6232f))
+
+## [1.111.0](https://github.com/googleapis/google-cloud-go/releases/tag/aiplatform%2Fv1.111.0) (2025-12-11)
+
+### Features
+
+* add streaming function call argument API changes ([21c9dbf](https://github.com/googleapis/google-cloud-go/commit/21c9dbfbf9061b29b1c64e5ca24273ec97078f25))
+
+### Bug Fixes
+
+* fix issue when using UrlContext tool ([21c9dbf](https://github.com/googleapis/google-cloud-go/commit/21c9dbfbf9061b29b1c64e5ca24273ec97078f25))
+
+### Documentation
+
+* A comment for field `args` in message `.google.cloud.aiplatform.v1.FunctionCall` is changed ([21c9dbf](https://github.com/googleapis/google-cloud-go/commit/21c9dbfbf9061b29b1c64e5ca24273ec97078f25))
+* A comment for field `name` in message `.google.cloud.aiplatform.v1.FunctionCall` is changed ([21c9dbf](https://github.com/googleapis/google-cloud-go/commit/21c9dbfbf9061b29b1c64e5ca24273ec97078f25))
+
+## [1.110.0](https://github.com/googleapis/google-cloud-go/releases/tag/aiplatform%2Fv1.110.0) (2025-12-04)
+
+### Features
+
+* A new field `min_gpu_driver_version` is added to message `.google.cloud.aiplatform.v1beta1.MachineSpec` ([185951b](https://github.com/googleapis/google-cloud-go/commit/185951b3bea9fb942979e81ce248ccdebb40d94b))
+* Add support for developer connect based deployment ([185951b](https://github.com/googleapis/google-cloud-go/commit/185951b3bea9fb942979e81ce248ccdebb40d94b))
+* Expose FullFineTunedResources for full fine tuned deployments ([185951b](https://github.com/googleapis/google-cloud-go/commit/185951b3bea9fb942979e81ce248ccdebb40d94b))
+* Expose zone when creating a FeatureOnlineStore ([185951b](https://github.com/googleapis/google-cloud-go/commit/185951b3bea9fb942979e81ce248ccdebb40d94b))
+* Introduce RagManagedVertexVectorSearch as a new vector db option ([185951b](https://github.com/googleapis/google-cloud-go/commit/185951b3bea9fb942979e81ce248ccdebb40d94b))
+* add RagCorpus.satisfies_pzs and RagCorpus.satisfies_pzi ([185951b](https://github.com/googleapis/google-cloud-go/commit/185951b3bea9fb942979e81ce248ccdebb40d94b))
+* add `ReplicatedVoiceConfig` to `VoiceConfig` to enable Gemini TTS voice replication ([185951b](https://github.com/googleapis/google-cloud-go/commit/185951b3bea9fb942979e81ce248ccdebb40d94b))
+* add `gpu_partition_size` in `machine_spec` v1 api ([185951b](https://github.com/googleapis/google-cloud-go/commit/185951b3bea9fb942979e81ce248ccdebb40d94b))
+
+### Documentation
+
+* A comment for field `enterprise` in message `.google.cloud.aiplatform.v1beta1.RagManagedDbConfig` is changed ([185951b](https://github.com/googleapis/google-cloud-go/commit/185951b3bea9fb942979e81ce248ccdebb40d94b))
+* A comment for field `gcs_metadata_schema_source` in message `.google.cloud.aiplatform.v1beta1.RagFileMetadataConfig` is changed ([185951b](https://github.com/googleapis/google-cloud-go/commit/185951b3bea9fb942979e81ce248ccdebb40d94b))
+* A comment for field `gcs_metadata_source` in message `.google.cloud.aiplatform.v1beta1.RagFileMetadataConfig` is changed ([185951b](https://github.com/googleapis/google-cloud-go/commit/185951b3bea9fb942979e81ce248ccdebb40d94b))
+* A comment for field `google_drive_metadata_schema_source` in message `.google.cloud.aiplatform.v1beta1.RagFileMetadataConfig` is changed ([185951b](https://github.com/googleapis/google-cloud-go/commit/185951b3bea9fb942979e81ce248ccdebb40d94b))
+* A comment for field `google_drive_metadata_source` in message `.google.cloud.aiplatform.v1beta1.RagFileMetadataConfig` is changed ([185951b](https://github.com/googleapis/google-cloud-go/commit/185951b3bea9fb942979e81ce248ccdebb40d94b))
+* A comment for field `package_spec` in message `.google.cloud.aiplatform.v1.ReasoningEngineSpec` is changed ([185951b](https://github.com/googleapis/google-cloud-go/commit/185951b3bea9fb942979e81ce248ccdebb40d94b))
+* A comment for field `package_spec` in message `.google.cloud.aiplatform.v1beta1.ReasoningEngineSpec` is changed ([185951b](https://github.com/googleapis/google-cloud-go/commit/185951b3bea9fb942979e81ce248ccdebb40d94b))
+* A comment for field `rag_files_count` in message `.google.cloud.aiplatform.v1beta1.RagCorpus` is changed ([185951b](https://github.com/googleapis/google-cloud-go/commit/185951b3bea9fb942979e81ce248ccdebb40d94b))
+* A comment for field `scaled` in message `.google.cloud.aiplatform.v1beta1.RagManagedDbConfig` is changed ([185951b](https://github.com/googleapis/google-cloud-go/commit/185951b3bea9fb942979e81ce248ccdebb40d94b))
+* A comment for field `user_metadata` in message `.google.cloud.aiplatform.v1beta1.RagFile` is changed ([185951b](https://github.com/googleapis/google-cloud-go/commit/185951b3bea9fb942979e81ce248ccdebb40d94b))
+* A comment for message `RagManagedDbConfig` is changed ([185951b](https://github.com/googleapis/google-cloud-go/commit/185951b3bea9fb942979e81ce248ccdebb40d94b))
+* A comment for message `ReasoningEngineSpec` is changed ([185951b](https://github.com/googleapis/google-cloud-go/commit/185951b3bea9fb942979e81ce248ccdebb40d94b))
+* update `ReplicatedVoiceConfig.mime_type` comment ([185951b](https://github.com/googleapis/google-cloud-go/commit/185951b3bea9fb942979e81ce248ccdebb40d94b))
+
+## [1.109.0](https://github.com/googleapis/google-cloud-go/releases/tag/aiplatform%2Fv1.109.0) (2025-11-06)
+
+### Features
+
+* Add EmbedContent method v1 ([612e608](https://github.com/googleapis/google-cloud-go/commit/612e608d8b000d0564bd4fbe7619bfa60de232ff))
+* Add order_by to list_events ([4a640b5](https://github.com/googleapis/google-cloud-go/commit/4a640b5d1833b6dc4fc159aa2204ec9d930cc0d7))
+* add new fields `SUCCESSFULLY_DEPLOYED` and `FAILED_TO_DEPLOY` to `DeploymentStage` ([4a640b5](https://github.com/googleapis/google-cloud-go/commit/4a640b5d1833b6dc4fc159aa2204ec9d930cc0d7))
+
+### Bug Fixes
+
+* An existing field `transfer_to_agent` is removed from message `.google.cloud.aiplatform.v1beta1.EventActions` ([4a640b5](https://github.com/googleapis/google-cloud-go/commit/4a640b5d1833b6dc4fc159aa2204ec9d930cc0d7))
+* updating `bigtable_metadata` field name in `FeatureOnlineStore` ([89b5ea2](https://github.com/googleapis/google-cloud-go/commit/89b5ea2fff81893da7181da4e1bab8e4815d326c))
+* updating `bigtable_metadata` field name in `FeatureView` ([89b5ea2](https://github.com/googleapis/google-cloud-go/commit/89b5ea2fff81893da7181da4e1bab8e4815d326c))
+* updating `enableDirectBigtableAccess` field name in FeatureOnlineStore` ([89b5ea2](https://github.com/googleapis/google-cloud-go/commit/89b5ea2fff81893da7181da4e1bab8e4815d326c))
+
+### Documentation
+
+* A comment for field `filter` in message `.google.cloud.aiplatform.v1beta1.ListSessionsRequest` is changed ([4a640b5](https://github.com/googleapis/google-cloud-go/commit/4a640b5d1833b6dc4fc159aa2204ec9d930cc0d7))
+* Remove comments for a non public feature ([4a640b5](https://github.com/googleapis/google-cloud-go/commit/4a640b5d1833b6dc4fc159aa2204ec9d930cc0d7))
+* fix idle_scaledown_period minimum from 3600 to 300 (5 minutes) ([4a640b5](https://github.com/googleapis/google-cloud-go/commit/4a640b5d1833b6dc4fc159aa2204ec9d930cc0d7))
+
+## [1.108.0](https://github.com/googleapis/google-cloud-go/releases/tag/aiplatform%2Fv1.108.0) (2025-10-22)
+
+### Features
+
+* Add EmbedContent method v1beta1 
+* Continuous Tuning 
+* add FunctionResponsePart and excluded_predefined_functions in ComputerUse 
+
+### Documentation
+
+* Updated docs for related fields 
+
+## [1.107.0](https://github.com/googleapis/google-cloud-go/compare/aiplatform/v1.106.0...aiplatform/v1.107.0) (2025-10-15)
+
+
+### Features
+
+* **aiplatform:** Add aspect_ratio and image_config for v1 version ([cb7e6c0](https://github.com/googleapis/google-cloud-go/commit/cb7e6c00fba87706d6c03989f7670eb8042090e8))
+* **aiplatform:** Add support for Inline source based deployment ([cb7e6c0](https://github.com/googleapis/google-cloud-go/commit/cb7e6c00fba87706d6c03989f7670eb8042090e8))
+* **aiplatform:** Add support for Inline source based deployment ([cb7e6c0](https://github.com/googleapis/google-cloud-go/commit/cb7e6c00fba87706d6c03989f7670eb8042090e8))
+
+
+### Documentation
+
+* **aiplatform:** A comment for field `package_spec` in message `.google.cloud.aiplatform.v1.ReasoningEngineSpec` is changed ([cb7e6c0](https://github.com/googleapis/google-cloud-go/commit/cb7e6c00fba87706d6c03989f7670eb8042090e8))
+* **aiplatform:** A comment for field `package_spec` in message `.google.cloud.aiplatform.v1beta1.ReasoningEngineSpec` is changed ([cb7e6c0](https://github.com/googleapis/google-cloud-go/commit/cb7e6c00fba87706d6c03989f7670eb8042090e8))
+* **aiplatform:** A comment for message `ReasoningEngineSpec` is changed ([cb7e6c0](https://github.com/googleapis/google-cloud-go/commit/cb7e6c00fba87706d6c03989f7670eb8042090e8))
+* **aiplatform:** A comment for message `ReasoningEngineSpec` is changed ([cb7e6c0](https://github.com/googleapis/google-cloud-go/commit/cb7e6c00fba87706d6c03989f7670eb8042090e8))
+
+## [1.106.0](https://github.com/googleapis/google-cloud-go/compare/aiplatform/v1.105.0...aiplatform/v1.106.0) (2025-10-14)
+
+
+### Features
+
+* **aiplatform:** Add aspect_ratio and image_config for v1beta1 version ([#13118](https://github.com/googleapis/google-cloud-go/issues/13118)) ([486bd40](https://github.com/googleapis/google-cloud-go/commit/486bd406336fe91eae7c9040f2496ebfc8aee342))
+
+## [1.105.0](https://github.com/googleapis/google-cloud-go/compare/aiplatform/v1.104.0...aiplatform/v1.105.0) (2025-10-13)
+
+
+### Features
+
+* **aiplatform:** A new field `initial_replica_count` is added to message `.google.cloud.aiplatform.v1beta1.DedicatedResources` ([ddc086c](https://github.com/googleapis/google-cloud-go/commit/ddc086c9e374b6c48b5f6ddfefd20a5eadd488ac))
+* **aiplatform:** A new field `scale_to_zero_spec` is added to message `.google.cloud.aiplatform.v1beta1.DedicatedResources` ([ddc086c](https://github.com/googleapis/google-cloud-go/commit/ddc086c9e374b6c48b5f6ddfefd20a5eadd488ac))
+* **aiplatform:** A new message `ScaleToZeroSpec` is added ([ddc086c](https://github.com/googleapis/google-cloud-go/commit/ddc086c9e374b6c48b5f6ddfefd20a5eadd488ac))
+* **aiplatform:** Add additional proto fields and GenerateFetchAccessToken API ([ddc086c](https://github.com/googleapis/google-cloud-go/commit/ddc086c9e374b6c48b5f6ddfefd20a5eadd488ac))
+* **aiplatform:** Add JAILBREAK as a new Prompt block reason in PredictionService ([ddc086c](https://github.com/googleapis/google-cloud-go/commit/ddc086c9e374b6c48b5f6ddfefd20a5eadd488ac))
+* **aiplatform:** Add JAILBREAK category to SafetySettings for prediction service ([ddc086c](https://github.com/googleapis/google-cloud-go/commit/ddc086c9e374b6c48b5f6ddfefd20a5eadd488ac))
+* **aiplatform:** Add JAILBREAK category to SafetySettings for prediction service ([#13084](https://github.com/googleapis/google-cloud-go/issues/13084)) ([ddc086c](https://github.com/googleapis/google-cloud-go/commit/ddc086c9e374b6c48b5f6ddfefd20a5eadd488ac))
+
 ## [1.104.0](https://github.com/googleapis/google-cloud-go/compare/aiplatform/v1.103.0...aiplatform/v1.104.0) (2025-10-07)
 
 

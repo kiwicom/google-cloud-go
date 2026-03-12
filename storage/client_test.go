@@ -1397,6 +1397,63 @@ func TestWriterFlushAtCloseEmulated(t *testing.T) {
 	})
 }
 
+func TestWriterRetryAttrsEmulated(t *testing.T) {
+	transportClientTest(skipHTTP("appends only supported via gRPC"), t, func(t *testing.T, ctx context.Context, project, bucket string, client storageClient) {
+		// Populate test data.
+		_, err := client.CreateBucket(ctx, project, bucket, &BucketAttrs{
+			Name: bucket,
+		}, nil)
+		if err != nil {
+			t.Fatalf("client.CreateBucket: %v", err)
+		}
+		prefix := time.Now().Nanosecond()
+		objName := fmt.Sprintf("%d-object-%d", prefix, time.Now().Nanosecond())
+		data := generateRandomBytes(20 * MiB)
+
+		vc := &Client{tc: client}
+
+		// Setup retry test.
+		instructions := map[string][]string{"storage.objects.insert": {"return-503-after-4097K"}}
+		testID := createRetryTest(t, client, instructions)
+		ctx = callctx.SetHeaders(ctx, "x-retry-test-id", testID)
+
+		w := vc.Bucket(bucket).Object(objName).If(Conditions{DoesNotExist: true}).NewWriter(ctx)
+		w.Append = true
+		w.ChunkSize = 8 * MiB
+
+		if _, err := w.Flush(); err != nil {
+			t.Fatalf("flush at 0b: %v", err)
+		}
+
+		if _, err := w.Write(data); err != nil {
+			t.Fatalf("writing data: got %v; want ok", err)
+		}
+
+		if err := w.Close(); err != nil {
+			t.Fatalf("closing writer: %v", err)
+		}
+
+		if gotAttrs := w.Attrs(); gotAttrs == nil || gotAttrs.Name != objName {
+			t.Fatalf("w.Attrs(): got %v, want attrs for object %v", gotAttrs, objName)
+		}
+
+		// Download object and check data
+		r, err := veneerClient.Bucket(bucket).Object(objName).NewReader(ctx)
+		defer r.Close()
+		if err != nil {
+			t.Fatalf("opening reading: %v", err)
+		}
+		wantLen := len(data)
+		got, err := io.ReadAll(r)
+		if n := len(got); n != wantLen {
+			t.Fatalf("expected to read %d bytes, but got %d (%v)", wantLen, n, err)
+		}
+		if !bytes.Equal(got, data) {
+			t.Fatalf("got data did not match uploaded data")
+		}
+	})
+}
+
 // Tests small flush (under 512 bytes) to verify that logic avoiding
 // content type sniffing works as expected in this case.
 func TestWriterSmallFlushEmulated(t *testing.T) {
@@ -1985,16 +2042,17 @@ func TestMRDAddAfterCloseEmulated(t *testing.T) {
 			callbackErr = err
 		}
 		reader.Add(buf, 10, 3000, callback)
+		reader.Wait()
 		if callbackErr == nil {
 			t.Fatalf("Expected error: stream to be closed")
 		}
-		if got, want := callbackErr, "stream is closed"; !strings.Contains(got.Error(), want) {
+		if got, want := callbackErr, "downloader closed"; !strings.Contains(got.Error(), want) {
 			t.Errorf("err: got %q, want err to contain %q", got.Error(), want)
 		}
 	})
 }
 
-func TestMRDAddSanityCheck(t *testing.T) {
+func TestMRDAddSanityCheckEmulated(t *testing.T) {
 	transportClientTest(skipHTTP("mrd is implemented for grpc client"), t, func(t *testing.T, ctx context.Context, project, bucket string, client storageClient) {
 		setBidiReads(t, client)
 		content := make([]byte, 5000)
@@ -2044,14 +2102,15 @@ func TestMRDAddSanityCheck(t *testing.T) {
 		reader.Add(buf, 10000, 3000, callback1)
 		// Request fails as limit is negative.
 		reader.Add(buf, 10, -1, callback2)
-		if got, want := err1, fmt.Errorf("offset larger than size of object"); got.Error() != want.Error() {
-			t.Errorf("err: got %v, want %v", got.Error(), want.Error())
+		reader.Wait()
+		if status.Code(err1) != codes.OutOfRange {
+			t.Errorf("err1: got %v, want OutOfRange", err1)
 		}
-		if got, want := err2, fmt.Errorf("limit can't be negative"); got.Error() != want.Error() {
-			t.Errorf("err: got %v, want %v", got.Error(), want.Error())
+		if got, want := err2.Error(), "limit cannot be negative"; !strings.Contains(got, want) {
+			t.Errorf("err2: got %v, want to contain %v", got, want)
 		}
-		if err = reader.Close(); err != nil {
-			t.Errorf("Error while closing reader %v", err)
+		if err = reader.Close(); status.Code(err) != codes.OutOfRange {
+			t.Errorf("Unexpected err while closing reader %v", err)
 		}
 	})
 }
@@ -2874,13 +2933,15 @@ func TestWriterChunkTransferTimeoutEmulated(t *testing.T) {
 						t.Fatalf("opening reading: %v", err)
 					}
 					wantLen := len(buffer)
-					got := make([]byte, wantLen)
-					n, err := r.Read(got)
-					if n != wantLen {
-						t.Fatalf("expected to read %d bytes, but got %d", wantLen, n)
+					got, err := io.ReadAll(r)
+					if err != nil {
+						t.Fatalf("reading bytes: %v", err)
 					}
-					if diff := cmp.Diff(got, buffer); diff != "" {
-						t.Fatalf("checking written content: got(-),want(+):\n%s", diff)
+					if len(got) != wantLen {
+						t.Fatalf("expected to read %d bytes, but got %d", wantLen, len(got))
+					}
+					if !bytes.Equal(got, buffer) {
+						t.Errorf("checking content: bytes did not match")
 					}
 				} else {
 					// Deadlines may come through as a context.DeadlineExceeded (HTTP) or status.DeadlineExceeded (gRPC)

@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"cloud.google.com/go/internal/postprocessor/librarian/librariangen/build"
+	"cloud.google.com/go/internal/postprocessor/librarian/librariangen/configure"
 	"cloud.google.com/go/internal/postprocessor/librarian/librariangen/generate"
 	"cloud.google.com/go/internal/postprocessor/librarian/librariangen/release"
 )
@@ -28,10 +29,13 @@ func TestRun(t *testing.T) {
 	generateFunc = func(ctx context.Context, cfg *generate.Config) error {
 		return nil
 	}
-	releaseInitFunc = func(ctx context.Context, cfg *release.Config) error {
+	releaseStageFunc = func(ctx context.Context, cfg *release.Config) error {
 		return nil
 	}
 	buildFunc = func(ctx context.Context, cfg *build.Config) error {
+		return nil
+	}
+	configureFunc = func(ctx context.Context, cfg *configure.Config) error {
 		return nil
 	}
 
@@ -77,9 +81,19 @@ func TestRun(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:    "configure command",
+			name:    "configure command no flags",
 			args:    []string{"configure"},
 			wantErr: false,
+		},
+		{
+			name:    "configure command with flags",
+			args:    []string{"configure", "--source=.", "--output=./build_out"},
+			wantErr: false,
+		},
+		{
+			name:    "configure command with bad flag",
+			args:    []string{"configure", "--library=xyz"},
+			wantErr: true,
 		},
 		{
 			name:    "generate command no flags",
@@ -97,18 +111,18 @@ func TestRun(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:    "release-init command no flags",
-			args:    []string{"release-init"},
+			name:    "release-stage command no flags",
+			args:    []string{"release-stage"},
 			wantErr: false,
 		},
 		{
-			name:    "release-init command with flags",
-			args:    []string{"release-init", "--repo=.", "--output=./build_out"},
+			name:    "release-stage command with flags",
+			args:    []string{"release-stage", "--repo=.", "--output=./build_out"},
 			wantErr: false,
 		},
 		{
-			name:    "release-init command with bad flag",
-			args:    []string{"release-init", "--source=."},
+			name:    "release-stage command with bad flag",
+			args:    []string{"release-stage", "--source=."},
 			wantErr: true,
 		},
 	}

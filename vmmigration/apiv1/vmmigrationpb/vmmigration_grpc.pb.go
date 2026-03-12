@@ -21,8 +21,9 @@
 package vmmigrationpb
 
 import (
-	longrunningpb "cloud.google.com/go/longrunning/autogen/longrunningpb"
 	context "context"
+
+	longrunningpb "cloud.google.com/go/longrunning/autogen/longrunningpb"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -246,7 +247,7 @@ type VmMigrationClient interface {
 	ListImageImportJobs(ctx context.Context, in *ListImageImportJobsRequest, opts ...grpc.CallOption) (*ListImageImportJobsResponse, error)
 	// Gets details of a single ImageImportJob.
 	GetImageImportJob(ctx context.Context, in *GetImageImportJobRequest, opts ...grpc.CallOption) (*ImageImportJob, error)
-	// Initiates the cancellation of a running clone job.
+	// Initiates the cancellation of a running ImageImportJob.
 	CancelImageImportJob(ctx context.Context, in *CancelImageImportJobRequest, opts ...grpc.CallOption) (*longrunningpb.Operation, error)
 	// Creates a new disk migration job in a given Source.
 	CreateDiskMigrationJob(ctx context.Context, in *CreateDiskMigrationJobRequest, opts ...grpc.CallOption) (*longrunningpb.Operation, error)
@@ -978,7 +979,7 @@ type VmMigrationServer interface {
 	ListImageImportJobs(context.Context, *ListImageImportJobsRequest) (*ListImageImportJobsResponse, error)
 	// Gets details of a single ImageImportJob.
 	GetImageImportJob(context.Context, *GetImageImportJobRequest) (*ImageImportJob, error)
-	// Initiates the cancellation of a running clone job.
+	// Initiates the cancellation of a running ImageImportJob.
 	CancelImageImportJob(context.Context, *CancelImageImportJobRequest) (*longrunningpb.Operation, error)
 	// Creates a new disk migration job in a given Source.
 	CreateDiskMigrationJob(context.Context, *CreateDiskMigrationJobRequest) (*longrunningpb.Operation, error)

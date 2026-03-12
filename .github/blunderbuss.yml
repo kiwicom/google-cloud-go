@@ -8,11 +8,7 @@ assign_issues_by:
 - labels:
   - 'api: storage'
   to:
-  - BrennaEpp
-- labels:
-  - 'api: bigquery'
-  to:
-  - alvarowolfx
+  - cpriti-os
 - labels:
   - 'api: pubsub'
   to:
@@ -25,11 +21,6 @@ assign_issues_by:
   - 'api: spanner'
   to:
   - rahul2393
-- labels:
-  - 'api: logging'
-  - 'api: clouderrorreporting'
-  to:
-  - googleapis/api-logging-go-reviewers
 - labels:
   - 'api: cloudprofiler'
   to:

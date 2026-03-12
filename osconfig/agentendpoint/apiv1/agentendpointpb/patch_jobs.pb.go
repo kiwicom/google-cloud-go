@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,10 +21,11 @@
 package agentendpointpb
 
 import (
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
+
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -165,7 +166,7 @@ const (
 	WindowsUpdateSettings_SECURITY WindowsUpdateSettings_Classification = 2
 	// "A widely released and frequent software update that contains additions
 	// to a product’s definition database. Definition databases are often used
-	// to detect objects that have specific attributes, such as malicious code,
+	// to detect objects that have specific attributes, such as harmful code,
 	// phishing websites, or junk mail." [1]
 	WindowsUpdateSettings_DEFINITION WindowsUpdateSettings_Classification = 3
 	// "Software that controls the input and output of a device." [1]

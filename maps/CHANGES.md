@@ -2,6 +2,41 @@
 
 
 
+## [1.26.0](https://github.com/googleapis/google-cloud-go/releases/tag/maps%2Fv1.26.0) (2025-11-06)
+
+### Features
+
+* Add Place.consumerAlert field for suspicious review activity ([84cf55a](https://github.com/googleapis/google-cloud-go/commit/84cf55a9adab99b310134e04b562eddfa4d63c67))
+* Add Review.visitDate field to indicate when the review author visited ([84cf55a](https://github.com/googleapis/google-cloud-go/commit/84cf55a9adab99b310134e04b562eddfa4d63c67))
+
+## [1.25.0](https://github.com/googleapis/google-cloud-go/releases/tag/maps%2Fv1.25.0) (2025-10-22)
+
+### Features
+
+* Add moved_place and moved_place_id to Place 
+* add OptimizeToursLongRunning method 
+* add OptimizeToursUri method 
+* add experimental Load Costs feature 
+* add experimental U-turn Avoidance feature 
+
+### Documentation
+
+* A comment for enum `TravelMode` is changed 
+* A comment for field `duration_distance_matrices` in message `.google.maps.routeoptimization.v1.ShipmentModel` is changed 
+* A comment for field `place_id` in message `.google.maps.routeoptimization.v1.Waypoint` is changed 
+* A comment for field `precedence_rules` in message `.google.maps.routeoptimization.v1.ShipmentModel` is changed 
+* Change comments in some fields in Places API 
+
+## [1.24.0](https://github.com/googleapis/google-cloud-go/releases/tag/maps%2Fv1.24.0) (2025-10-10)
+
+### Features
+
+* Upgrade to Go 1.24 (#12781) ([4f1129c](https://github.com/googleapis/google-cloud-go/commit/4f1129c))
+
+### Bug Fixes
+
+* upgrade gRPC service registration func (#13014) ([b80fb13](https://github.com/googleapis/google-cloud-go/commit/b80fb13fbee3f0e2a152337304e9cf8f7762cb72))
+
 ## [1.23.0](https://github.com/googleapis/google-cloud-go/compare/maps/v1.22.0...maps/v1.23.0) (2025-08-18)
 
 

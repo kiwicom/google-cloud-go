@@ -24,6 +24,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -56,10 +57,11 @@ func TestDefaultCredentials_GdchServiceAccountKey(t *testing.T) {
 		if r.Method != "POST" {
 			t.Errorf("unexpected request method: %v", r.Method)
 		}
-		if err := r.ParseForm(); err != nil {
-			t.Error(err)
+		var v map[string]string
+		if err := json.NewDecoder(r.Body).Decode(&v); err != nil {
+			t.Fatalf("unable to decode request body: %v", err)
 		}
-		parts := strings.Split(r.FormValue("subject_token"), ".")
+		parts := strings.Split(v["subject_token"], ".")
 		var header jwt.Header
 		var claims jwt.Claims
 		b, err = base64.RawURLEncoding.DecodeString(parts[0])
@@ -77,10 +79,10 @@ func TestDefaultCredentials_GdchServiceAccountKey(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if got := r.FormValue("audience"); got != aud {
+		if got := v["audience"]; got != aud {
 			t.Errorf("got audience %v, want %v", got, gdch.GrantType)
 		}
-		if want := jwt.HeaderAlgRSA256; header.Algorithm != want {
+		if want := jwt.HeaderAlgES256; header.Algorithm != want {
 			t.Errorf("got alg %q, want %q", header.Algorithm, want)
 		}
 		if want := jwt.HeaderType; header.Type != want {
@@ -193,6 +195,66 @@ func TestDefaultCredentials_ImpersonatedServiceAccountKey(t *testing.T) {
 	}
 	if want := "googleapis.com"; got != want {
 		t.Fatalf("got %q, want %q", got, want)
+	}
+	tok, err := creds.Token(context.Background())
+	if err != nil {
+		t.Fatalf("creds.Token() = %v", err)
+	}
+	if want := "a_fake_token"; tok.Value != want {
+		t.Fatalf("got %q, want %q", tok.Value, want)
+	}
+	if want := internal.TokenTypeBearer; tok.Type != want {
+		t.Fatalf("got %q, want %q", tok.Type, want)
+	}
+}
+
+func TestDefaultCredentials_ImpersonatedServiceAccountKey_ScopesFromFile(t *testing.T) {
+	b, err := os.ReadFile("../internal/testdata/imp_with_scopes.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	f, err := credsfile.ParseImpersonatedServiceAccount(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantScopes := []string{"https://www.googleapis.com/auth/drive"}
+	if !reflect.DeepEqual(f.Scopes, wantScopes) {
+		t.Fatalf("scopes not parsed correctly from file: got %v, want %v", f.Scopes, wantScopes)
+	}
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var reqBody struct {
+			Scope []string `json:"scope"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
+			t.Fatal(err)
+		}
+		if !reflect.DeepEqual(reqBody.Scope, wantScopes) {
+			t.Errorf("got scopes %v, want %v", reqBody.Scope, wantScopes)
+		}
+		resp := &struct {
+			AccessToken string `json:"accessToken"`
+			ExpireTime  string `json:"expireTime"`
+		}{
+			AccessToken: "a_fake_token",
+			ExpireTime:  "2006-01-02T15:04:05Z",
+		}
+		if err := json.NewEncoder(w).Encode(&resp); err != nil {
+			t.Fatal(err)
+		}
+	}))
+	defer ts.Close()
+	f.ServiceAccountImpersonationURL = ts.URL + "/v1/projects/-/serviceAccounts/sa3@developer.gserviceaccount.com:generateAccessToken"
+	b, err = json.Marshal(f)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	creds, err := DetectDefault(&DetectOptions{
+		CredentialsJSON:  b,
+		UseSelfSignedJWT: true,
+	})
+	if err != nil {
+		t.Fatal(err)
 	}
 	tok, err := creds.Token(context.Background())
 	if err != nil {

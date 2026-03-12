@@ -42,7 +42,7 @@ func setupTestDirs(t *testing.T, initialRepoContent map[string]string, requestJS
 	}
 
 	// Create the test request
-	if err := os.WriteFile(filepath.Join(librarianDir, "release-init-request.json"), []byte(requestJSON), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(librarianDir, "release-stage-request.json"), []byte(requestJSON), 0644); err != nil {
 		t.Fatalf("failed to write request file: %v", err)
 	}
 
@@ -102,7 +102,7 @@ func assertVersion(t *testing.T, versionGoPath, wantVersion string) {
 	t.Errorf("could not find Version constant in version.go")
 }
 
-func TestInit(t *testing.T) {
+func TestStage(t *testing.T) {
 	oldNow := now
 	defer func() { now = oldNow }()
 	now = func() time.Time {
@@ -128,9 +128,9 @@ func TestInit(t *testing.T) {
 					"source_roots": ["secretmanager"],
 					"apis": [{"path": "google/cloud/secretmanager/v1"}],
 					"changes": [
-						{"type": "feat", "subject": "another feature", "source_commit_hash": "zxcvbn098765"},
-						{"type": "fix", "subject": "correct typo in documentation", "source_commit_hash": "123456abcdef"},
-						{"type": "feat", "subject": "add new GetSecret API", "source_commit_hash": "abcdef123456"}
+						{"type": "feat", "subject": "another feature", "commit_hash": "zxcvbn098765"},
+						{"type": "fix", "subject": "correct typo in documentation", "commit_hash": "123456abcdef"},
+						{"type": "feat", "subject": "add new GetSecret API", "commit_hash": "abcdef123456"}
 					],
 					"tag_format": "{id}/v{version}"
 				}]
@@ -169,9 +169,9 @@ func TestInit(t *testing.T) {
 					"id": "wholerepo", "version": "1.16.0", "release_triggered": true,
 					"source_roots": ["."],
 					"changes": [
-						{"type": "feat", "subject": "another feature", "source_commit_hash": "zxcvbn098765"},
-						{"type": "fix", "subject": "correct typo in documentation", "source_commit_hash": "123456abcdef"},
-						{"type": "feat", "subject": "add new GetSecret API", "source_commit_hash": "abcdef123456"}
+						{"type": "feat", "subject": "another feature", "commit_hash": "zxcvbn098765"},
+						{"type": "fix", "subject": "correct typo in documentation", "commit_hash": "123456abcdef"},
+						{"type": "feat", "subject": "add new GetSecret API", "commit_hash": "abcdef123456"}
 					],
 					"tag_format": "v{version}"
 				}]
@@ -191,9 +191,9 @@ func TestInit(t *testing.T) {
 					"id": "root-module", "version": "1.16.0", "release_triggered": true,
 					"source_roots": ["civil", "rpcreplay", "httpreplay"],
 					"changes": [
-						{"type": "feat", "subject": "another feature", "source_commit_hash": "zxcvbn098765"},
-						{"type": "fix", "subject": "correct typo in documentation", "source_commit_hash": "123456abcdef"},
-						{"type": "feat", "subject": "add new GetSecret API", "source_commit_hash": "abcdef123456"}
+						{"type": "feat", "subject": "another feature", "commit_hash": "zxcvbn098765"},
+						{"type": "fix", "subject": "correct typo in documentation", "commit_hash": "123456abcdef"},
+						{"type": "feat", "subject": "add new GetSecret API", "commit_hash": "abcdef123456"}
 					],
 					"tag_format": "v{version}"
 				}]
@@ -213,7 +213,7 @@ func TestInit(t *testing.T) {
 					"id": "xyz", "version": "1.16.0", "release_triggered": true,
 					"source_roots": ["xyz"],
 					"changes": [
-						{"type": "feat", "subject": "another feature", "source_commit_hash": "zxcvbn098765"}
+						{"type": "feat", "subject": "another feature", "commit_hash": "zxcvbn098765"}
 					],
 					"tag_format": "custom-{id}-v{version}"
 				}]
@@ -243,9 +243,9 @@ func TestInit(t *testing.T) {
 				OutputDir:    outputDir,
 			}
 
-			err := Init(context.Background(), cfg)
+			err := Stage(context.Background(), cfg)
 			if (err != nil) != tt.wantErr {
-				t.Fatalf("Init() error = %v, wantErr %v", err, tt.wantErr)
+				t.Fatalf("Stage() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if tt.wantErr {
 				return

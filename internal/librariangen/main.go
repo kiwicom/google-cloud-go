@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	"cloud.google.com/go/internal/postprocessor/librarian/librariangen/build"
+	"cloud.google.com/go/internal/postprocessor/librarian/librariangen/configure"
 	"cloud.google.com/go/internal/postprocessor/librarian/librariangen/generate"
 	"cloud.google.com/go/internal/postprocessor/librarian/librariangen/release"
 )
@@ -39,18 +40,19 @@ func main() {
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
 		Level: logLevel,
 	})))
-	slog.Info("librariangen: invoked", "args", os.Args)
+	slog.Debug("librariangen: invoked", "args", os.Args)
 	if err := run(context.Background(), os.Args[1:]); err != nil {
 		slog.Error("librariangen: failed", "error", err)
 		os.Exit(1)
 	}
-	slog.Info("librariangen: finished successfully")
+	slog.Debug("librariangen: finished successfully")
 }
 
 var (
-	generateFunc    = generate.Generate
-	releaseInitFunc = release.Init
-	buildFunc       = build.Build
+	generateFunc     = generate.Generate
+	releaseStageFunc = release.Stage
+	buildFunc        = build.Build
+	configureFunc    = configure.Configure
 )
 
 // run executes the appropriate command based on the CLI's invocation arguments.
@@ -76,11 +78,10 @@ func run(ctx context.Context, args []string) error {
 	switch cmd {
 	case "generate":
 		return handleGenerate(ctx, flags)
-	case "release-init":
-		return handleReleaseInit(ctx, flags)
+	case "release-stage":
+		return handleReleaseStage(ctx, flags)
 	case "configure":
-		slog.Warn("librariangen: configure command is not yet implemented")
-		return nil
+		return handleConfigure(ctx, flags)
 	case "build":
 		return handleBuild(ctx, flags)
 	default:
@@ -103,17 +104,17 @@ func handleGenerate(ctx context.Context, args []string) error {
 	return generateFunc(ctx, cfg)
 }
 
-// handleReleaseInit parses flags for the release-init command and calls the release tool.
-func handleReleaseInit(ctx context.Context, args []string) error {
+// handleReleaseStage parses flags for the release-stage command and calls the release tool.
+func handleReleaseStage(ctx context.Context, args []string) error {
 	cfg := &release.Config{}
-	releaseFlags := flag.NewFlagSet("release-init", flag.ContinueOnError)
-	releaseFlags.StringVar(&cfg.LibrarianDir, "librarian", "/librarian", "Path to the librarian-tool input directory. Contains release-init-request.json.")
+	releaseFlags := flag.NewFlagSet("release-stage", flag.ContinueOnError)
+	releaseFlags.StringVar(&cfg.LibrarianDir, "librarian", "/librarian", "Path to the librarian-tool input directory. Contains release-stage-request.json.")
 	releaseFlags.StringVar(&cfg.RepoDir, "repo", "/repo", "Path to the language repository checkout.")
 	releaseFlags.StringVar(&cfg.OutputDir, "output", "/output", "Path to the empty directory where librariangen writes its output.")
 	if err := releaseFlags.Parse(args); err != nil {
 		return fmt.Errorf("librariangen: failed to parse flags: %w", err)
 	}
-	return releaseInitFunc(ctx, cfg)
+	return releaseStageFunc(ctx, cfg)
 }
 
 // handleBuild parses flags for the build command and calls the builder.
@@ -126,4 +127,19 @@ func handleBuild(ctx context.Context, args []string) error {
 		return fmt.Errorf("librariangen: failed to parse flags: %w", err)
 	}
 	return buildFunc(ctx, cfg)
+}
+
+// handleConfigure parses flags for the configure command and calls the configure code.
+func handleConfigure(ctx context.Context, args []string) error {
+	cfg := &configure.Config{}
+	configureFlags := flag.NewFlagSet("configure", flag.ContinueOnError)
+	configureFlags.StringVar(&cfg.LibrarianDir, "librarian", "/librarian", "Path to the librarian-tool input directory. Contains generate-request.json.")
+	configureFlags.StringVar(&cfg.InputDir, "input", "/input", "Path to the .librarian/generator-input directory from the language repository.")
+	configureFlags.StringVar(&cfg.RepoDir, "repo", "/repo", "Path to a read-only copy of relevant language repo files.")
+	configureFlags.StringVar(&cfg.OutputDir, "output", "/output", "Path to the empty directory where librariangen writes its output.")
+	configureFlags.StringVar(&cfg.SourceDir, "source", "/source", "Path to a complete checkout of the googleapis repository.")
+	if err := configureFlags.Parse(args); err != nil {
+		return fmt.Errorf("librariangen: failed to parse flags: %w", err)
+	}
+	return configureFunc(ctx, cfg)
 }

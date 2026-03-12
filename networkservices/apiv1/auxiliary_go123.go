@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -60,6 +60,12 @@ func (it *GrpcRouteIterator) All() iter.Seq2[*networkservicespb.GrpcRoute, error
 // All returns an iterator. If an error is returned by the iterator, the
 // iterator will stop after that iteration.
 func (it *HttpRouteIterator) All() iter.Seq2[*networkservicespb.HttpRoute, error] {
+	return iterator.RangeAdapter(it.Next)
+}
+
+// All returns an iterator. If an error is returned by the iterator, the
+// iterator will stop after that iteration.
+func (it *LbEdgeExtensionIterator) All() iter.Seq2[*networkservicespb.LbEdgeExtension, error] {
 	return iterator.RangeAdapter(it.Next)
 }
 

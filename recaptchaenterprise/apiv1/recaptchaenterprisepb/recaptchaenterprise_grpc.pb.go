@@ -22,6 +22,7 @@ package recaptchaenterprisepb
 
 import (
 	context "context"
+
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -89,7 +90,7 @@ type RecaptchaEnterpriseServiceClient interface {
 	// destination project.
 	MigrateKey(ctx context.Context, in *MigrateKeyRequest, opts ...grpc.CallOption) (*Key, error)
 	// Adds an IP override to a key. The following restrictions hold:
-	//   - The maximum number of IP overrides per key is 100.
+	//   - The maximum number of IP overrides per key is 1000.
 	//   - For any conflict (such as IP already exists or IP part of an existing
 	//     IP range), an error is returned.
 	AddIpOverride(ctx context.Context, in *AddIpOverrideRequest, opts ...grpc.CallOption) (*AddIpOverrideResponse, error)
@@ -363,7 +364,7 @@ type RecaptchaEnterpriseServiceServer interface {
 	// destination project.
 	MigrateKey(context.Context, *MigrateKeyRequest) (*Key, error)
 	// Adds an IP override to a key. The following restrictions hold:
-	//   - The maximum number of IP overrides per key is 100.
+	//   - The maximum number of IP overrides per key is 1000.
 	//   - For any conflict (such as IP already exists or IP part of an existing
 	//     IP range), an error is returned.
 	AddIpOverride(context.Context, *AddIpOverrideRequest) (*AddIpOverrideResponse, error)

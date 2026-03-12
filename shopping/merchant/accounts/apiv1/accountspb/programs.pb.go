@@ -21,11 +21,12 @@
 package accountspb
 
 import (
+	reflect "reflect"
+	sync "sync"
+
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (
@@ -103,6 +104,7 @@ func (Program_State) EnumDescriptor() ([]byte, []int) {
 // The following list is the available set of program resource IDs accessible
 // through the API:
 //
+// * `checkout`
 // * `free-listings`
 // * `shopping-ads`
 // * `youtube-shopping-checkout`

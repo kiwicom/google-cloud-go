@@ -37,6 +37,8 @@ import (
 	"github.com/googleapis/gax-go/v2"
 	"github.com/googleapis/gax-go/v2/callctx"
 	"google.golang.org/api/iterator"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 const (
@@ -295,6 +297,7 @@ var methods = map[string][]retryFunc{
 			if err != nil {
 				return err
 			}
+
 			buf := new(bytes.Buffer)
 			var err1 error
 			callback := func(x, y int64, err error) {
@@ -315,6 +318,125 @@ var methods = map[string][]retryFunc{
 				return err
 			}
 			return nil
+		},
+		func(ctx context.Context, c *Client, fs *resources, _ bool) error {
+			_, ok := c.tc.(*grpcStorageClient)
+			if !ok {
+				// Do a regular get to consume instructions.
+				_, err := c.Bucket(fs.bucket.Name).Object(fs.object.Name).Attrs(ctx)
+				return err
+			}
+
+			// Download the test object using the MultiRangeDownloader.
+			mrd, err := c.Bucket(fs.bucket.Name).Object(fs.object.Name).NewMultiRangeDownloader(ctx)
+			if err != nil {
+				return err
+			}
+
+			// Verify recovery for multiple concurrent requests on a single stream.
+			buf1, buf2, buf3 := new(bytes.Buffer), new(bytes.Buffer), new(bytes.Buffer)
+			var err1, err2, err3 error
+
+			mrd.Add(buf1, 0, 2, func(x, y int64, err error) {
+				err1 = err
+			})
+			mrd.Add(buf2, 2, 2, func(x, y int64, err error) {
+				err2 = err
+			})
+			mrd.Add(buf3, 4, 2, func(x, y int64, err error) {
+				err3 = err
+			})
+
+			mrd.Wait()
+
+			if err1 != nil || err2 != nil || err3 != nil {
+				return fmt.Errorf("multi-range retry failed: err1=%v, err2=%v, err3=%v", err1, err2, err3)
+			}
+
+			combined := append(buf1.Bytes(), append(buf2.Bytes(), buf3.Bytes()...)...)
+			if !bytes.Equal(combined, randomBytesToWrite) {
+				return fmt.Errorf("data mismatch after multi-range retry")
+			}
+
+			if err := mrd.Close(); err != nil {
+				return err
+			}
+			return nil
+		},
+		func(ctx context.Context, c *Client, fs *resources, _ bool) error {
+			_, ok := c.tc.(*grpcStorageClient)
+			if !ok {
+				// Do a regular get to consume instructions.
+				_, err := c.Bucket(fs.bucket.Name).Object(fs.object.Name).Attrs(ctx)
+				return err
+			}
+
+			// Download the test object using the MultiRangeDownloader.
+			mrd, err := c.Bucket(fs.bucket.Name).Object(fs.object.Name).NewMultiRangeDownloader(ctx)
+			if err != nil {
+				return err
+			}
+
+			var errInvalid error
+
+			// Invalid Range (well beyond the 6-byte object size)
+			mrd.Add(io.Discard, 1000, 10, func(x, y int64, err error) { errInvalid = err })
+
+			mrd.Wait()
+
+			// Invalid range error must report OutOfRange.
+			if status.Code(errInvalid) != codes.OutOfRange {
+				return fmt.Errorf("invalid range did not return OutOfRange; got: %v", errInvalid)
+			}
+			// Close error must also report OutOfRange.
+			err = mrd.Close()
+			if status.Code(err) != codes.OutOfRange {
+				return fmt.Errorf("Close did not return OutOfRange; got: %v", err)
+			}
+			return nil
+		},
+		func(ctx context.Context, c *Client, fs *resources, _ bool) error {
+			_, ok := c.tc.(*grpcStorageClient)
+			if !ok {
+				_, err := c.Bucket(fs.bucket.Name).Object(fs.object.Name).Attrs(ctx)
+				return err
+			}
+
+			// Upload 3MiB of data. This provides enough data to ensure retries happen mid-stream.
+			objName := objectIDs.New()
+			if err := uploadTestObject(fs.bucket.Name, objName, randomBytes3MiB); err != nil {
+				return fmt.Errorf("failed to upload 3MiB object: %v", err)
+			}
+
+			obj := c.Bucket(fs.bucket.Name).Object(objName)
+			mrd, err := obj.NewMultiRangeDownloader(ctx)
+			if err != nil {
+				return err
+			}
+
+			buf := new(bytes.Buffer)
+			var errRes error
+
+			// Request the full 3MiB range.
+			// The emulator's fault injection (e.g., reset-connection) will trigger mid-download.
+			mrd.Add(buf, 0, 3*MiB, func(x, y int64, err error) {
+				errRes = err
+			})
+
+			mrd.Wait()
+
+			if errRes != nil {
+				return fmt.Errorf("resumption test failed: %v", errRes)
+			}
+
+			if int64(buf.Len()) != 3*MiB {
+				return fmt.Errorf("resumption data length mismatch: got %d, want %d", buf.Len(), 3*MiB)
+			}
+			if !bytes.Equal(buf.Bytes(), randomBytes3MiB) {
+				return fmt.Errorf("resumption data mismatch: content does not match randomBytes3MiB")
+			}
+
+			return mrd.Close()
 		},
 	},
 	"storage.objects.download": {
@@ -630,13 +752,7 @@ var methods = map[string][]retryFunc{
 	},
 	"storage.appendable.upload": {
 		func(ctx context.Context, c *Client, fs *resources, preconditions bool) error {
-			bucketName := fmt.Sprintf("%s-appendable", bucketIDs.New())
-			b := c.Bucket(bucketName)
-			if err := b.Create(ctx, projectID, nil); err != nil {
-				return err
-			}
-			defer b.Delete(ctx)
-
+			b := c.Bucket(fs.bucket.Name)
 			obj := b.Object(objectIDs.New())
 			if preconditions {
 				obj = obj.If(Conditions{DoesNotExist: true})
@@ -654,6 +770,10 @@ var methods = map[string][]retryFunc{
 			}
 			if err := objW.Close(); err != nil {
 				return fmt.Errorf("Writer.Close: %v", err)
+			}
+
+			if objW.Attrs() == nil {
+				return fmt.Errorf("Writer.Attrs: expected attrs for written object, got nil")
 			}
 
 			// Don't reuse obj, in case preconditions were set on the write request.
@@ -677,13 +797,7 @@ var methods = map[string][]retryFunc{
 		},
 		// Appendable upload using Flush() and FinalizeOnClose=false.
 		func(ctx context.Context, c *Client, fs *resources, preconditions bool) error {
-			bucketName := fmt.Sprintf("%s-appendable", bucketIDs.New())
-			b := c.Bucket(bucketName)
-			if err := b.Create(ctx, projectID, nil); err != nil {
-				return err
-			}
-			defer b.Delete(ctx)
-
+			b := c.Bucket(fs.bucket.Name)
 			obj := b.Object(objectIDs.New())
 			if preconditions {
 				obj = obj.If(Conditions{DoesNotExist: true})
@@ -703,9 +817,18 @@ var methods = map[string][]retryFunc{
 
 			}
 
+			// TODO: Remove this exception and enable the attrs check below once we
+			// figure out how to handle the redirect w/ write handle case.
+			// See b/451594633
 			if err := objW.Close(); err != nil {
-				return fmt.Errorf("Writer.Close: %w", err)
+				if !strings.Contains(err.Error(), "no object attributes returned") {
+					return fmt.Errorf("Writer.Close: %w", err)
+				}
 			}
+
+			// if objW.Attrs() == nil {
+			// 	return fmt.Errorf("Writer.Attrs: expected attrs for written object, got nil")
+			// }
 
 			// Don't reuse obj, in case preconditions were set on the write request.
 			r, err := b.Object(obj.ObjectName()).NewReader(ctx)
@@ -716,6 +839,73 @@ var methods = map[string][]retryFunc{
 			content, err := io.ReadAll(r)
 			if err != nil {
 				return fmt.Errorf("Reader.Read: %w", err)
+			}
+
+			gotMd5 := md5.Sum(content)
+			expectedMd5 := md5.Sum(toWrite)
+			if d := cmp.Diff(gotMd5, expectedMd5); d != "" {
+				return fmt.Errorf("content mismatch, got %v bytes (md5: %v), want %v bytes (md5: %v)",
+					len(content), gotMd5, len(toWrite), expectedMd5)
+			}
+			return nil
+		},
+		// Appendable upload using a takeover.
+		func(ctx context.Context, c *Client, fs *resources, preconditions bool) error {
+			b := c.Bucket(fs.bucket.Name)
+			obj := b.Object(objectIDs.New())
+			if preconditions {
+				obj = obj.If(Conditions{DoesNotExist: true})
+			}
+
+			// Force multiple messages per chunk, and multiple chunks in the object.
+			chunkSize := 2 * maxPerMessageWriteSize
+			toWrite := generateRandomBytes(chunkSize * 3)
+
+			objW := obj.NewWriter(ctx)
+			objW.Append = true
+			objW.ChunkSize = chunkSize
+			if _, err := objW.Write(toWrite[0:maxPerMessageWriteSize]); err != nil {
+				return fmt.Errorf("Writer.Write: %w", err)
+			}
+			// Close this writer, which will create the appendable unfinalized object
+			// (there was not enough in Write to trigger a send).
+			if err := objW.Close(); err != nil {
+				return fmt.Errorf("Creation Writer.Close: %v", err)
+			}
+
+			generation := int64(0)
+			if preconditions {
+				generation = objW.Attrs().Generation
+			}
+			objT := b.Object(obj.ObjectName()).Generation(generation)
+			w, l, err := objT.NewWriterFromAppendableObject(ctx, &AppendableWriterOpts{ChunkSize: chunkSize})
+			if err != nil {
+				return fmt.Errorf("NewWriterFromAppendableObject: %v", err)
+			}
+			if l != int64(maxPerMessageWriteSize) {
+				return fmt.Errorf("NewWriterFromAppendableObject unexpected len: got %v, want %v", l, maxPerMessageWriteSize)
+			}
+
+			if _, err := w.Write(toWrite[maxPerMessageWriteSize:]); err != nil {
+				return fmt.Errorf("Writer.Write: %v", err)
+			}
+			if err := w.Close(); err != nil {
+				return fmt.Errorf("Writer.Close: %v", err)
+			}
+
+			if w.Attrs() == nil {
+				return fmt.Errorf("Writer.Attrs: expected attrs for written object, got nil")
+			}
+
+			// Don't reuse obj, in case preconditions were set on the write request.
+			r, err := b.Object(obj.ObjectName()).NewReader(ctx)
+			defer r.Close()
+			if err != nil {
+				return fmt.Errorf("obj.NewReader: %v", err)
+			}
+			content, err := io.ReadAll(r)
+			if err != nil {
+				return fmt.Errorf("Reader.Read: %v", err)
 			}
 
 			gotMd5 := md5.Sum(content)

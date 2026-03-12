@@ -373,6 +373,20 @@ func TestQuery(t *testing.T) {
 				return j
 			}(),
 		},
+		{
+			dst: c.Dataset("dataset-id").Table("table-id"),
+			src: &QueryConfig{
+				Q:                "query string",
+				DefaultProjectID: "def-project-id",
+				DefaultDatasetID: "def-dataset-id",
+				Continuous:       true,
+			},
+			want: func() *bq.Job {
+				j := defaultQueryJob()
+				j.Configuration.Query.Continuous = true
+				return j
+			}(),
+		},
 	}
 	for i, tc := range testCases {
 		query := c.Query("")
@@ -456,7 +470,7 @@ func TestProbeFastPath(t *testing.T) {
 				Query:        "foo",
 				UseLegacySql: &pfalse,
 				FormatOptions: &bq.DataFormatOptions{
-					UseInt64Timestamp: true,
+					TimestampOutputFormat: defaultTimestampWireFormat,
 				},
 			},
 		},
@@ -495,7 +509,7 @@ func TestProbeFastPath(t *testing.T) {
 				},
 				UseQueryCache: &pfalse,
 				FormatOptions: &bq.DataFormatOptions{
-					UseInt64Timestamp: true,
+					TimestampOutputFormat: defaultTimestampWireFormat,
 				},
 				Reservation: "reservation/1",
 				MaxSlots:    222,
@@ -523,6 +537,14 @@ func TestProbeFastPath(t *testing.T) {
 			inCfg: QueryConfig{
 				Q:                   "foo",
 				SchemaUpdateOptions: []string{"bar"},
+			},
+			wantErr: true,
+		},
+		{
+			// fail, continuous query
+			inCfg: QueryConfig{
+				Q:          "foo",
+				Continuous: true,
 			},
 			wantErr: true,
 		},

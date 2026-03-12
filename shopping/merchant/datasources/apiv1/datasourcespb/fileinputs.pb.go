@@ -21,13 +21,14 @@
 package datasourcespb
 
 import (
+	reflect "reflect"
+	sync "sync"
+
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	dayofweek "google.golang.org/genproto/googleapis/type/dayofweek"
 	timeofday "google.golang.org/genproto/googleapis/type/timeofday"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (
@@ -102,21 +103,11 @@ func (FileInput_FileInputType) EnumDescriptor() ([]byte, []int) {
 }
 
 // The required fields vary based on the frequency of fetching. For a
-// monthly
-// fetch schedule,
-// `day of
-// month`
-// and
-// [hour of
-// day][https://developers.google.com/merchant/api/reference/rest/datasources_v1beta/accounts.dataSources#timeofday]
-// are required. For a weekly fetch schedule,
-// [day of
-// week][https://developers.google.com/merchant/api/reference/rest/datasources_v1beta/accounts.dataSources#dayofweek]
-// and [hour of
-// day][https://developers.google.com/merchant/api/reference/rest/datasources_v1beta/accounts.dataSources#timeofday]
-// are required. For a daily fetch schedule, only an [hour of
-// day][https://developers.google.com/merchant/api/reference/rest/datasources_v1beta/accounts.dataSources#timeofday]
-// is required.
+// monthly fetch schedule, `day of month` and [hour of
+// day](../Shared.Types/TimeOfDay) are required. For a weekly fetch
+// schedule, [day of week](../Shared.Types/DayOfWeek) and [hour of
+// day](../Shared.Types/TimeOfDay) are required. For a daily fetch schedule,
+// only an [hour of day](../Shared.Types/TimeOfDay) is required.
 type FileInput_FetchSettings_Frequency int32
 
 const (

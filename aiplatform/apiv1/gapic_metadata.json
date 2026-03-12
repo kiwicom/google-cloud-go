@@ -629,6 +629,11 @@
                 "FetchFeatureValues"
               ]
             },
+            "GenerateFetchAccessToken": {
+              "methods": [
+                "GenerateFetchAccessToken"
+              ]
+            },
             "GetIamPolicy": {
               "methods": [
                 "GetIamPolicy"
@@ -2644,6 +2649,11 @@
             "DirectRawPredict": {
               "methods": [
                 "DirectRawPredict"
+              ]
+            },
+            "EmbedContent": {
+              "methods": [
+                "EmbedContent"
               ]
             },
             "Explain": {

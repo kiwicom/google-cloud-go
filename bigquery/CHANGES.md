@@ -3,6 +3,41 @@
 
 
 
+## [1.73.0](https://github.com/googleapis/google-cloud-go/releases/tag/bigquery%2Fv1.73.0) (2026-02-04)
+
+### Features
+
+* Support picosecond timestamp precision in BigQuery Storage API ([185951b](https://github.com/googleapis/google-cloud-go/commit/185951b3bea9fb942979e81ce248ccdebb40d94b))
+* add Stored Procedure Sharing support for analyticshub listings ([185951b](https://github.com/googleapis/google-cloud-go/commit/185951b3bea9fb942979e81ce248ccdebb40d94b))
+* add tags support for Pub/Sub subscriptions ([185951b](https://github.com/googleapis/google-cloud-go/commit/185951b3bea9fb942979e81ce248ccdebb40d94b))
+* add timestamp precision support to schema (#13421) ([52020af](https://github.com/googleapis/google-cloud-go/commit/52020af51ccbeacc922da94dfd3652cd286eee55))
+* transition format options (#13422) ([59efe32](https://github.com/googleapis/google-cloud-go/commit/59efe3238807932eca03b21803f91898def7a6e7))
+
+### Bug Fixes
+
+* make additional errors retriable: tcp timeout and http2 client connection lost (#13269) ([466d309](https://github.com/googleapis/google-cloud-go/commit/466d309daf183cf17c71758adb078d1da6871825))
+* roundtrip readonly fields (#13370) ([9e84705](https://github.com/googleapis/google-cloud-go/commit/9e847052090812d96f55df540365d0cc98f68320))
+
+### Documentation
+
+* change comment indicating `enable_gemini_in_bigquery` field for BigQuery Reservation Assignments is deprecated ([35d7578](https://github.com/googleapis/google-cloud-go/commit/35d75787536876c61ef70682a7ee5407579e41e6))
+
+## [1.72.0](https://github.com/googleapis/google-cloud-go/compare/bigquery/v1.71.0...bigquery/v1.72.0) (2025-10-28)
+
+
+### Features
+
+* **bigquery/reservation:** Add new `BACKGROUND_CHANGE_DATA_CAPTURE`, `BACKGROUND_COLUMN_METADATA_INDEX`, and `BACKGROUND_SEARCH_INDEX_REFRESH` reservation assignment types ([182df61](https://github.com/googleapis/google-cloud-go/commit/182df616184794be315edc7299aff021052c4f46))
+* **bigquery/reservation:** Add new reservation IAM policy get/set/test methods ([182df61](https://github.com/googleapis/google-cloud-go/commit/182df616184794be315edc7299aff021052c4f46))
+* **bigquery/reservation:** Add support for creation and modification of new reservation groups ([182df61](https://github.com/googleapis/google-cloud-go/commit/182df616184794be315edc7299aff021052c4f46))
+* **bigquery:** Expose continuous query in config ([#13130](https://github.com/googleapis/google-cloud-go/issues/13130)) ([2f0942b](https://github.com/googleapis/google-cloud-go/commit/2f0942b65854dcabbf49c1605e26fc5a6543c734))
+
+
+### Bug Fixes
+
+* **bigquery/v2:** Upgrade gRPC service registration func ([8fffca2](https://github.com/googleapis/google-cloud-go/commit/8fffca2819fa3dc858c213aa0c503e0df331b084))
+* **bigquery:** Upgrade gRPC service registration func ([8fffca2](https://github.com/googleapis/google-cloud-go/commit/8fffca2819fa3dc858c213aa0c503e0df331b084))
+
 ## [1.71.0](https://github.com/googleapis/google-cloud-go/compare/bigquery/v1.70.0...bigquery/v1.71.0) (2025-09-30)
 
 

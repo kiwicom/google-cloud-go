@@ -132,6 +132,9 @@ func Generate(ctx context.Context, cfg *Config) error {
 			return fmt.Errorf("librariangen: post-processing failed: %w", err)
 		}
 	}
+	if err := deleteOutputPaths(cfg.OutputDir, moduleConfig.DeleteGenerationOutputPaths); err != nil {
+		return fmt.Errorf("librariangen: failed to delete paths specified in delete_generation_output_paths: %w", err)
+	}
 
 	slog.Debug("librariangen: generate command finished")
 	return nil
@@ -139,25 +142,30 @@ func Generate(ctx context.Context, cfg *Config) error {
 
 // invokeProtoc handles the protoc GAPIC generation logic for the 'generate' CLI command.
 // It reads a request file, and for each API specified, it invokes protoc
-// to generate the client library. It returns the module path and the path to the service YAML.
+// to generate the client library and its corresponding .repo-metadata.json file.
 func invokeProtoc(ctx context.Context, cfg *Config, generateReq *request.Library, moduleConfig *config.ModuleConfig) error {
 	for _, api := range generateReq.APIs {
 		apiServiceDir := filepath.Join(cfg.SourceDir, api.Path)
 		slog.Info("processing api", "service_dir", apiServiceDir)
 		bazelConfig, err := bazelParse(apiServiceDir)
 		apiConfig := moduleConfig.GetAPIConfig(api.Path)
+		features := apiConfig.ResolvedGeneratorFeatures()
 		if apiConfig.HasDisableGAPIC() {
 			bazelConfig.DisableGAPIC()
 		}
 		if err != nil {
 			return fmt.Errorf("librariangen: failed to parse BUILD.bazel for %s: %w", apiServiceDir, err)
 		}
-		args, err := protoc.Build(generateReq, &api, apiServiceDir, bazelConfig, cfg.SourceDir, cfg.OutputDir)
+		args, err := protoc.Build(generateReq, &api, bazelConfig, cfg.SourceDir, cfg.OutputDir, apiConfig.NestedProtos, features)
 		if err != nil {
 			return fmt.Errorf("librariangen: failed to build protoc command for api %q in library %q: %w", api.Path, generateReq.ID, err)
 		}
 		if err := execvRun(ctx, args, cfg.OutputDir); err != nil {
 			return fmt.Errorf("librariangen: protoc failed for api %q in library %q: %w", api.Path, generateReq.ID, err)
+		}
+		// Generate the .repo-metadata.json file for this API.
+		if err := generateRepoMetadata(ctx, cfg, generateReq, &api, moduleConfig, bazelConfig); err != nil {
+			return fmt.Errorf("librariangen: failed to generate .repo-metadata.json for api %q in library %q: %w", api.Path, generateReq.ID, err)
 		}
 	}
 	return nil
@@ -197,6 +205,9 @@ func fixPermissions(dir string) error {
 
 // flattenOutput moves the contents of /output/cloud.google.com/go/ to the top
 // level of /output.
+//
+// Failure here may be indicative that input artifacts did NOT generate artifacts
+// in the expected location (e.g. wrong go_package path, etc).
 func flattenOutput(outputDir string) error {
 	slog.Debug("librariangen: flattening output directory", "dir", outputDir)
 	goDir := filepath.Join(outputDir, "cloud.google.com", "go")
@@ -276,6 +287,23 @@ func moveFiles(sourceDir, targetDir string) error {
 		slog.Debug("librariangen: moving file", "from", oldPath, "to", newPath)
 		if err := os.Rename(oldPath, newPath); err != nil {
 			return fmt.Errorf("librariangen: failed to move %s to %s: %w", oldPath, newPath, err)
+		}
+	}
+	return nil
+}
+
+// deleteOutputPaths deletes the specified paths, which may be files
+// or directories, relative to the output directory. This is an emergency
+// escape hatch for situations where files are generated that we don't want
+// to include, such as the internal/generated/snippets/storage/internal directory.
+// This is configured in repo-config.yaml at the library level, with the key
+// delete_generation_output_paths.
+func deleteOutputPaths(outputDir string, pathsToDelete []string) error {
+	for _, path := range pathsToDelete {
+		// This is so rare that it's useful to be able to validate it easily.
+		slog.Info("deleting output path", "path", path)
+		if err := os.RemoveAll(filepath.Join(outputDir, path)); err != nil {
+			return err
 		}
 	}
 	return nil
